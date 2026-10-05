@@ -66,5 +66,8 @@ per serve process); the UI half hot-reloads.
   machine. No prompts, arguments, or outputs are read or stored.
 - Status thresholds live in `dashboard/plugin_api.py` (`_agent_state`) and are
   documented in the page's payload `notes` for auditability.
+- Visual harness: `docs/preview-harness.html` — serve the repo over HTTP and
+  screenshot it headless (Edge `--headless=new --screenshot`) to verify scene
+  geometry before shipping (CSS-3D rotation traps are silent otherwise).
 
 MIT — Alfirus Group, 2026.

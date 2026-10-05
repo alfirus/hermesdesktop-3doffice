@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Office 3D preview</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #060b16; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+  .stage { position: absolute; inset: 0; perspective: 1500px; perspective-origin: 50% 42%; }
+  .world {
+    position: absolute; left: 50%; top: 48%; width: 1676px; height: 1039px;
+    transform: translate(-50%,-50%) scale(0.62) rotateX(58deg) rotateZ(45deg);
+    transform-style: preserve-3d;
+  }
+  .floor {
+    position: absolute; inset: 0; border-radius: 26px;
+    border: 1px solid rgba(96,165,250,0.18);
+    background-image:
+      linear-gradient(rgba(96,165,250,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(96,165,250,0.07) 1px, transparent 1px),
+      radial-gradient(ellipse 55% 45% at 28% 22%, rgba(251,191,36,0.10), transparent 70%),
+      radial-gradient(ellipse 50% 45% at 72% 70%, rgba(56,189,248,0.08), transparent 70%),
+      linear-gradient(135deg, #0c1424, #0a1120);
+    background-size: 59px 59px, 59px 59px, 100% 100%, 100% 100%, 100% 100%;
+    box-shadow: 0 0 60px rgba(56,189,248,0.06) inset;
+  }
+  .wall {
+    position: absolute; height: 170px;
+    background: linear-gradient(180deg, rgba(125,211,252,0.055), rgba(125,211,252,0.02));
+    border: 1px solid rgba(125,211,252,0.28); border-bottom: none;
+    transform-origin: bottom; z-index: 900;
+  }
+  .wall-rot0 { transform: rotateX(-90deg); }
+  .wall-rot1 { transform: rotateZ(90deg) rotateX(-90deg); }
+  .desk-slab {
+    position: absolute; width: 136px; height: 66px; border-radius: 10px;
+    background: linear-gradient(135deg,#1c2740,#141d31);
+    border: 1px solid rgba(148,163,184,0.16);
+    transform-style: preserve-3d;
+  }
+  .desk-under {
+    position: absolute; width: 136px; height: 66px; border-radius: 10px;
+    background: #0d1526; opacity: .9;
+  }
+  .desk-shadow {
+    position: absolute; width: 170px; height: 110px; left: -14px; top: -6px;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, transparent 65%);
+  }
+  .monitor {
+    position: absolute; width: 58px; height: 38px; border-radius: 6px;
+    background: #0b1220; border: 1px solid rgba(148,163,184,0.25); overflow: hidden;
+  }
+  .billboard { transform: rotateZ(-45deg) rotateX(-58deg); transform-style: preserve-3d; }
+  .avatar-ring {
+    position: absolute; width: 62px; height: 62px; border-radius: 50%;
+  }
+  .avatar-card { position: absolute; width: 176px; left: -88px; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; transform-origin: bottom center; }
+  .avatar-img {
+    width: 72px; height: 72px; border-radius: 50%; overflow: hidden;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.45); background: #16213a;
+  }
+  .avatar-img img { width: 100%; height: 100%; object-fit: cover; }
+  .nm { color: #e2eaf5; font-size: 17px; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  .rl { color: #8b98ac; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+  .bubble {
+    max-width: 150px; padding: 3px 8px; border-radius: 8px; background: rgba(11,18,32,0.92);
+    color: #dbe7f5; font-size: 12px; line-height: 1.25; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-3px) } }
+  .room-label {
+    position: absolute; padding: 2px 8px; border-radius: 7px; background: rgba(11,18,32,0.75);
+    border: 1px solid rgba(148,163,184,0.25); color: #8b98ac; font-size: 9px;
+    letter-spacing: .4px; white-space: nowrap; z-index: 5;
+  }
+  .rug {
+    position: absolute; border-radius: 18px; background: rgba(99,102,241,0.07);
+    border: 1px solid rgba(129,140,248,0.22); transform: translateZ(1px);
+  }
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 75% 65% at 50% 42%, transparent 55%, rgba(4,8,18,0.55) 100%);
+  }
+  .hud { position: absolute; top: 0; left: 0; right: 0; padding: 12px 20px; z-index: 30;
+    display: flex; justify-content: space-between; align-items: baseline; }
+  .hud .t { color: #e2eaf5; font-size: 16px; font-weight: 500; }
+  .hud .s { color: #8b98ac; font-size: 11px; margin-left: 12px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #243044;
+    border-radius: 6px; padding: 4px 8px; font-size: 11px; color: #b6c2d4; margin-left: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="world" id="world">
+    <div class="floor"></div>
+    <div class="wall wall-rot0" style="left:0; top:-170px; width:1676px;"></div>
+    <div class="wall wall-rot1" style="left:0; top:-170px; width:1039px;"></div>
+
+    <!-- meeting room -->
+    <div class="rug" style="left:83px; top:519px; width:260px; height:342px;"></div>
+    <div class="wall wall-rot0" style="left:83px; top:349px; width:260px;"></div>
+    <div class="wall wall-rot1" style="left:83px; top:349px; width:342px;"></div>
+    <div class="room-label billboard" style="left:136px; top:545px;">Meeting room</div>
+
+    <!-- coffee corner -->
+    <div class="rug" style="left:65px; top:65px; width:224px; height:201px; background:rgba(251,191,36,0.06); border-color:rgba(251,191,36,0.20);"></div>
+    <div class="room-label billboard" style="left:100px; top:73px;">Coffee corner</div>
+
+    <!-- server rack -->
+    <div class="rug" style="left:1487px; top:65px; width:136px; height:142px; background:rgba(15,23,42,0.85); border-color:rgba(56,189,248,0.25);"></div>
+    <div class="room-label billboard" style="left:1489px; top:73px;">Server rack</div>
+  </div>
+  <div class="vignette"></div>
+  <div class="hud">
+    <div><span class="t">Office 3D — live floor</span><span class="s">generated 2026-10-05 10:30:00 · MYT (UTC+8)</span></div>
+    <div>
+      <span class="chip"><span class="dot" style="background:#34d399"></span>3 working</span>
+      <span class="chip"><span class="dot" style="background:#fbbf24"></span>2 idle</span>
+      <span class="chip"><span class="dot" style="background:#f87171"></span>7 blocked</span>
+      <span class="chip"><span class="dot" style="background:#475569"></span>8 off</span>
+    </div>
+  </div>
+</div>
+<script>
+  const UNIT = 118, BILLBOARD = 'billboard';
+  const STATUS_COLORS = { working: '#34d399', idle: '#fbbf24', blocked: '#f87171', off: '#475569' };
+  const AV = "av/";
+  const LAYOUT = {
+    sofia: [5.2, 2.7], syafiqah: [2.6, 0.9], naura: [4.2, 0.9], rina: [5.8, 0.9],
+    maisarah: [7.4, 0.9], nafisah: [9.0, 0.9], hana: [4.0, 2.3],
+    lina: [7.8, 2.9], aisyah: [9.4, 2.9], nadia: [11.0, 2.9],
+    nurul: [7.8, 4.3], alya: [9.4, 4.3], kira: [11.0, 4.3],
+    balqis: [7.8, 5.7], elizabeth: [9.4, 5.7], lisa: [11.0, 5.7], zara: [12.6, 5.7],
+    farah: [8.6, 7.1], shiela: [10.2, 7.1], ain: [11.8, 7.1]
+  };
+  const AGENTS = [
+    ['sofia','CEO','working','task: build the 3D office plugin'],
+    ['maisarah','Engineering Manager','blocked','blocked: CRM: MVP build'],
+    ['lina','Tech Lead','working','running commands'],
+    ['naura','CMO','idle','on a break'],
+    ['rina','Project Manager','blocked','blocked: Re-run knowledge protocol'],
+    ['aisyah','DevOps Engineer','working','running scripts'],
+    ['syafiqah','Sales Manager','off','offline'],
+    ['nafisah','Finance & Accounts','idle','on a break'],
+    ['kira','UI/UX Designer','off','offline']
+  ];
+  const COFFEE = [[136,136],[195,177],[136,207],[218,124]];
+  const world = document.getElementById('world');
+  AGENTS.forEach((ag, i) => {
+    const [name, role, status, detail] = ag;
+    const spot = LAYOUT[name] || [2, 2];
+    const isIdle = status === 'idle';
+    const u = isIdle ? COFFEE[i % COFFEE.length][0] : (spot[0] + 0.16) * UNIT;
+    const v = isIdle ? COFFEE[i % COFFEE.length][1] : (spot[1] + 0.72) * UNIT;
+    const tint = STATUS_COLORS[status];
+    const dz = Math.round((u / UNIT + v / UNIT) * 10);
+    // desk
+    const desk = document.createElement('div');
+    desk.style.cssText = `position:absolute; left:${spot[0] * UNIT}px; top:${spot[1] * UNIT}px; z-index:${dz - 2}; transform-style:preserve-3d;`;
+    desk.innerHTML = `
+      <div class="desk-shadow"></div>
+      <div class="desk-under" style="transform:translateZ(30px); left:6px; top:6px;"></div>
+      <div class="desk-slab" style="transform:translateZ(46px); ${status === 'working' ? `box-shadow:0 0 22px ${tint}22` : ''}"></div>
+      <div class="monitor billboard" style="left:34px; top:8px; transform:translateZ(70px) rotateZ(-45deg) rotateX(-58deg);">
+        <div style="position:absolute; inset:3px; border-radius:3px; background:${status === 'working' ? `linear-gradient(160deg, ${tint}33, #0b1220 70%)` : 'linear-gradient(160deg,#141d31,#0b1220 70%)'}"></div>
+      </div>`;
+    world.appendChild(desk);
+    // avatar
+    const av = document.createElement('div');
+    av.style.cssText = `position:absolute; left:${u}px; top:${v}px; z-index:${dz}; transform-style:preserve-3d;`;
+    const bubble = (status === 'working' || status === 'blocked')
+      ? `<div class="bubble" style="border:1px solid ${tint}55;"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${tint};margin-right:4px;vertical-align:middle;"></span>${detail}</div>` : '';
+    av.innerHTML = `
+      <div class="desk-shadow"></div>
+      <div class="avatar-ring" style="left:6px; top:4px; border:2px solid ${tint}; opacity:${status === 'off' ? .35 : .9}; box-shadow:${status === 'working' ? `0 0 18px ${tint}66` : 'none'}; transform:translateZ(2px);"></div>
+      <div class="avatar-card billboard">
+        ${bubble}
+        <div class="avatar-img" style="border:2.5px solid ${tint}; opacity:${status === 'off' ? .55 : 1};">
+          <img src="${AV}${name}.png" alt="${name}">
+        </div>
+        <div class="nm">${name}</div><div class="rl">${role}</div>
+      </div>`;
+    world.appendChild(av);
+  });
+</script>
+</body>
+</html>
