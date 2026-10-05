@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+scratch_*.py
+docs/preview.png.local

@@ -1,0 +1,14 @@
+name: office3d
+version: 1.0.0
+manifest_version: 2
+api_version: 1
+description: >-
+  Live 3D office for the Hermes Desktop: every agent has their own avatar on
+  the floor and their activity reflects what they are really doing — current
+  kanban task, live tool activity, blocked work, idle time. Reads the fleet's
+  session ledgers and kanban board read-only.
+author: Alfirus Group
+license: MIT
+homepage: https://github.com/alfirus/hermesdesktop-3doffice
+tags: [visualization, observability, dashboard, 3d]
+provides_tools: []

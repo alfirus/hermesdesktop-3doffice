@@ -1,0 +1,7 @@
+{
+  "name": "office3d",
+  "title": "Office 3D",
+  "description": "Live 3D agent office with per-agent avatars and real activity.",
+  "api": "plugin_api.py",
+  "hidden": true
+}
